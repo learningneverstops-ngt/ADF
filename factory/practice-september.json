@@ -1,0 +1,15 @@
+{
+	"name": "practice-september",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "8d698a0c-4e73-4b28-b9ef-894eb394365f",
+		"tenantId": "76947075-ed9a-4356-981f-ff81cf97601f"
+	}
+}
