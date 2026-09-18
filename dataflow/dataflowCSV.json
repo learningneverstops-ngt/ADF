@@ -1,0 +1,89 @@
+{
+	"name": "dataflowCSV",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "source_csv",
+						"type": "DatasetReference"
+					},
+					"name": "sourceCSV"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "dataflow_sink",
+						"type": "DatasetReference"
+					},
+					"name": "sink"
+				}
+			],
+			"transformations": [
+				{
+					"name": "select"
+				},
+				{
+					"name": "filterCols"
+				},
+				{
+					"name": "splitPayment"
+				},
+				{
+					"name": "normalizePaymentMethod"
+				},
+				{
+					"name": "Aggregates"
+				},
+				{
+					"name": "alterRow1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          transaction_id as short,",
+				"          transactional_date as timestamp,",
+				"          product_id as string,",
+				"          customer_id as short,",
+				"          payment as string,",
+				"          credit_card as long,",
+				"          loyalty_card as boolean,",
+				"          cost as double,",
+				"          quantity as short,",
+				"          price as double",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> sourceCSV",
+				"sourceCSV select(mapColumn(",
+				"          transaction_id,",
+				"          transactional_date,",
+				"          product_id,",
+				"          customer_id,",
+				"          payment,",
+				"          price",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> select",
+				"select filter(customer_id != 12) ~> filterCols",
+				"filterCols split(payment == 'visa',",
+				"     payment == 'mastercard',",
+				"     payment == 'americanexpress',",
+				"     disjoint: false) ~> splitPayment@(visa, mastercard, amex, OtherthanVisa)",
+				"splitPayment@OtherthanVisa derive(payment = coalesce(payment,'N/A')) ~> normalizePaymentMethod",
+				"splitPayment@visa aggregate(groupBy(customer_id),",
+				"     product_id = max(product_id)) ~> Aggregates",
+				"Aggregates alterRow(insertIf(product_id=='1')) ~> alterRow1",
+				"alterRow1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     umask: 0022,",
+				"     preCommands: [],",
+				"     postCommands: [],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> sink"
+			]
+		}
+	}
+}
